@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreador Lotofácil - Borges & Loterias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; }
+        .font-logo { font-family: 'Playfair Display', serif; }
+        .heat-hot { background-color: #ef4444; color: white; }
+        .heat-warm { background-color: #eab308; color: black; }
+        .heat-cold { background-color: #3b82f6; color: white; }
+        .custom-border { border: 4px solid #000000; }
+        .custom-blue-bg { background-color: #1e3a8a; }
+        .lottery-ball {
+            width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-weight: bold; box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            margin: 2px; font-size: 0.9rem;
+        }
+        .loader {
+            border: 5px solid #f3f3f3; border-top: 5px solid #FFD700; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- CABEÇALHO -->
+    <header class="w-full shadow-lg border-b-4 border-black" style="background-color: #FFD700;">
+        <div class="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+            <div class="mb-4 md:mb-0">
+                <h1 class="font-logo text-4xl text-black font-bold tracking-wide">Borges & Loterias</h1>
+                <p class="text-black text-sm uppercase tracking-wider font-bold mt-1">Inteligência em Jogos</p>
+            </div>
+            <div>
+                <h2 class="text-2xl md:text-3xl font-bold text-black uppercase tracking-tight border-2 border-black p-2 bg-white/20 rounded shadow-sm">
+                    Rastreador de Tendências Lotofácil
+                </h2>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        
+        <!-- ÁREA DE LOADING / ERRO -->
+        <div id="loading" class="text-center py-10">
+            <div class="loader"></div>
+            <p id="loading-text" class="text-lg font-bold text-gray-700">Conectando à base de dados da Caixa...</p>
+            <div id="error-box" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-lg mx-auto text-sm"></div>
+            <button id="retry-btn" onclick="location.reload()" class="hidden mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tentar Novamente</button>
+        </div>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div id="app-content" class="hidden space-y-8">
+            
+            <!-- MAPA DE CALOR -->
+            <section class="custom-blue-bg custom-border p-6 rounded-lg shadow-xl relative overflow-hidden">
+                <h3 class="text-2xl font-bold text-white mb-6 border-b-2 border-yellow-400 pb-2 inline-block">
+                    🔥 Mapa de Calor das Dezenas (Últimos 10 Jogos)
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Quente -->
+                    <div class="bg-white/10 p-4 rounded border-2 border-red-500 backdrop-blur-sm">
+                        <h4 class="text-red-400 font-bold text-xl mb-3 flex items-center">
+                            <span class="mr-2">🔥</span> Quente (+7x)
+                        </h4>
+                        <div id="layer-hot" class="flex flex-wrap justify-center md:justify-start"></div>
+                    </div>
+                    <!-- Morna -->
+                    <div class="bg-white/10 p-4 rounded border-2 border-yellow-400 backdrop-blur-sm">
+                        <h4 class="text-yellow-400 font-bold text-xl mb-3 flex items-center">
+                            <span class="mr-2">☀️</span> Morna (4-6x)
+                        </h4>
+                        <div id="layer-warm" class="flex flex-wrap justify-center md:justify-start"></div>
+                    </div>
+                    <!-- Fria -->
+                    <div class="bg-white/10 p-4 rounded border-2 border-blue-400 backdrop-blur-sm">
+                        <h4 class="text-blue-300 font-bold text-xl mb-3 flex items-center">
+                            <span class="mr-2">🧊</span> Fria (0-3x)
+                        </h4>
+                        <div id="layer-cold" class="flex flex-wrap justify-center md:justify-start"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 bg-black/40 rounded border border-white/20 text-white text-sm">
+                    <p><strong>Dica Borges:</strong> Equilibre seu jogo. Não jogue apenas números da área quente.</p>
+                </div>
+            </section>
+
+            <!-- LISTA DE RESULTADOS -->
+            <section>
+                <div class="flex justify-between items-center mb-6 pl-4 border-l-8 border-yellow-500">
+                    <h3 class="text-2xl font-bold text-gray-800">
+                        Histórico dos Últimos 10 Concursos
+                    </h3>
+                    <button onclick="init(true)" class="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-gray-700">Atualizar</button>
+                </div>
+                
+                <div id="results-container" class="custom-blue-bg custom-border rounded-lg shadow-xl p-4 md:p-6">
+                    <div id="results-list" class="flex flex-col gap-4">
+                        <!-- Itens via JS -->
+                    </div>
+                </div>
+            </section>
+            
+            <div id="api-status" class="text-center text-xs font-bold text-gray-500 mt-4 p-2 bg-gray-200 rounded"></div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-white text-center py-6 border-t-4 border-yellow-500">
+        <p class="font-logo text-xl">Borges & Loterias &copy; 2025</p>
+    </footer>
+
+    <script>
+        // CONFIGURAÇÃO
+        const FETCH_LIMIT = 10;
+        
+        // APIS (Principal e Reservas)
+        const API_1 = "https://loteriascaixa-api.herokuapp.com/api/lotofacil";
+        const API_2 = "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil"; // Geralmente bloqueia CORS, mas tentamos
+        
+        // ELEMENTOS
+        const loadingEl = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const errorBox = document.getElementById('error-box');
+        const retryBtn = document.getElementById('retry-btn');
+        const contentEl = document.getElementById('app-content');
+        const apiStatus = document.getElementById('api-status');
+        
+        // INICIALIZAÇÃO
+        async function init(forceRefresh = false) {
+            loadingEl.style.display = 'block';
+            contentEl.classList.add('hidden');
+            errorBox.classList.add('hidden');
+            retryBtn.classList.add('hidden');
+            
+            try {
+                loadingText.innerText = "Tentando Servidor Principal...";
+                let draws = await fetchWithBackup();
+                
+                if (!draws || draws.length === 0) throw new Error("Sem dados retornados.");
+
+                // Processamento
+                const stats = calculateFrequency(draws);
+                renderResultsList(draws, stats);
+                renderHeatMap(stats);
+                
+                loadingEl.style.display = 'none';
+                contentEl.classList.remove('hidden');
+
+            } catch (error) {
+                console.warn("Todas as tentativas falharam. Usando simulação.", error);
+                
+                // MOSTRAR ERRO MAS CARREGAR DADOS SIMULADOS PARA O USUÁRIO NÃO FICAR NA MÃO
+                apiStatus.innerHTML = `<span class="text-orange-600">⚠ MODO DEMONSTRAÇÃO (Conexão Instável). Verifique sua internet ou tente mais tarde.</span>`;
+                
+                const mock = generateMockData();
+                renderResultsList(mock, calculateFrequency(mock));
+                renderHeatMap(calculateFrequency(mock));
+                
+                loadingEl.style.display = 'none';
+                contentEl.classList.remove('hidden');
+            }
+        }
+
+        // SISTEMA INTELIGENTE DE BUSCA (Tenta API 1, depois API 2)
+        async function fetchWithBackup() {
+            try {
+                // TENTATIVA 1
+                const data = await fetchFromApi(API_1);
+                apiStatus.innerHTML = "✅ Conectado ao Servidor Principal";
+                return processData(data, API_1);
+            } catch (e1) {
+                console.warn("API 1 falhou:", e1);
+                try {
+                    // TENTATIVA 2 (Se a 1 falhar)
+                    loadingText.innerText = "Servidor 1 instável. Tentando Servidor Reserva...";
+                    const data2 = await fetchFromApi(API_2);
+                    apiStatus.innerHTML = "✅ Conectado ao Servidor Reserva";
+                    return processData(data2, API_2);
+                } catch (e2) {
+                    throw new Error("Falha em todas as APIs.");
+                }
+            }
+        }
+
+        async function fetchFromApi(url) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout
+            
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                if (!res.ok) throw new Error(`Status ${res.status}`);
+                return await res.json();
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        async function processData(latestData, sourceUrl) {
+            // Normaliza o dado mais recente
+            if (Array.isArray(latestData)) latestData = latestData[0];
+            
+            let latestConcurso = parseInt(latestData.concurso || latestData.numero);
+            let results = [];
+            
+            // Adiciona o primeiro
+            results.push(formatApiData(latestData));
+
+            // Busca os anteriores (estratégia de loop)
+            const promises = [];
+            for (let i = 1; i < FETCH_LIMIT; i++) {
+                const targetConcurso = latestConcurso - i;
+                promises.push(
+                    fetch(`${sourceUrl}/${targetConcurso}`)
+                        .then(res => res.ok ? res.json() : null)
+                        .then(d => d ? formatApiData(d) : null)
+                        .catch(() => null)
+                );
+            }
+            
+            const history = await Promise.all(promises);
+            history.forEach(h => { if(h) results.push(h); });
+            
+            return results;
+        }
+
+        function formatApiData(d) {
+            return {
+                concurso: d.concurso || d.numero,
+                data: d.data || d.dataApuracao || "Data não inf.",
+                dezenas: (d.dezenas || d.listaDezenas || []).map(n => n.toString().padStart(2,'0')).sort((a,b)=>a-b)
+            };
+        }
+
+        // FALLBACK (Modo Simulação)
+        function generateMockData() {
+            const mockDraws = [];
+            let currentConcurso = 3285; // Atualizar conforme necessário
+            for (let i = 0; i < FETCH_LIMIT; i++) {
+                const numbers = new Set();
+                while(numbers.size < 15) numbers.add(Math.floor(Math.random()*25)+1);
+                mockDraws.push({
+                    concurso: currentConcurso - i,
+                    data: "Modo Offline",
+                    dezenas: Array.from(numbers).sort((a,b)=>a-b).map(n=>n.toString().padStart(2,'0'))
+                });
+            }
+            return mockDraws;
+        }
+
+        // CÁLCULOS E RENDERIZAÇÃO
+        function calculateFrequency(draws) {
+            const f = {};
+            for(let i=1; i<=25; i++) f[i.toString().padStart(2,'0')] = 0;
+            draws.forEach(d => d.dezenas.forEach(n => { if(f[n]!==undefined) f[n]++ }));
+            return f;
+        }
+
+        function renderHeatMap(f) {
+            const layers = { hot: document.getElementById('layer-hot'), warm: document.getElementById('layer-warm'), cold: document.getElementById('layer-cold') };
+            Object.values(layers).forEach(l => l.innerHTML = '');
+            
+            Object.entries(f).sort((a,b)=>b[1]-a[1]).forEach(([num, count]) => {
+                let type = count >= 7 ? 'hot' : (count >= 4 ? 'warm' : 'cold');
+                const div = document.createElement('div');
+                div.className = `lottery-ball heat-${type} text-sm m-2 border-2 border-white`;
+                div.innerHTML = `<div class="flex flex-col items-center leading-none"><span class="text-lg">${num}</span><span class="text-[9px] opacity-80">${count}x</span></div>`;
+                layers[type].appendChild(div);
+            });
+        }
+
+        function renderResultsList(draws, stats) {
+            const list = document.getElementById('results-list');
+            list.innerHTML = '';
+            draws.forEach(d => {
+                const row = document.createElement('div');
+                row.className = 'bg-black/20 p-3 rounded border border-white/10 flex flex-col md:flex-row items-center justify-between hover:bg-black/30 transition';
+                
+                let balls = `<div class="flex flex-wrap justify-center gap-1">`;
+                d.dezenas.forEach(n => {
+                    let c = stats[n] || 0;
+                    let type = c >= 7 ? 'hot' : (c >= 4 ? 'warm' : 'cold');
+                    balls += `<div class="lottery-ball heat-${type} text-xs border border-black/20">${n}</div>`;
+                });
+                balls += `</div>`;
+
+                row.innerHTML = `
+                    <div class="mb-2 md:mb-0 text-center md:text-left min-w-[120px]">
+                        <div class="text-yellow-400 font-bold">#${d.concurso}</div>
+                        <div class="text-gray-400 text-xs">${d.data}</div>
+                    </div>
+                    ${balls}
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
