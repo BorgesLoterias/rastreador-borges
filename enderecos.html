@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borges & Loterias - Resultados Reais</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        /* Estilo Ouro Metálico para o Cabeçalho */
+        .header-gold {
+            background: radial-gradient(ellipse farthest-corner at right bottom, #FEDB37 0%, #FDB931 8%, #9f7928 30%, #8A6E2F 40%, transparent 80%),
+                        radial-gradient(ellipse farthest-corner at left top, #FFFFFF 0%, #FFFFAC 8%, #D1B464 25%, #5d4a1f 62%, #5d4a1f 100%);
+            color: #000;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            border-bottom: 4px solid black;
+        }
+
+        /* Bordas Pretas e Grossas */
+        .thick-border {
+            border: 3px solid black;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+        }
+
+        /* Bola da Lotofácil (Padrão) */
+        .loto-ball {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3);
+            border: 2px solid white;
+            color: white;
+        }
+        
+        /* Bola Pequena (Para o Histórico Vertical) */
+        .loto-ball.small {
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            border-width: 1px;
+            box-shadow: none;
+            flex-shrink: 0;
+        }
+        
+        .loto-ball.large {
+            width: 50px;
+            height: 50px;
+            font-size: 1.3rem;
+            border-width: 3px;
+        }
+
+        /* Destaque para números do miolo (6-18) */
+        .highlight-range {
+            border-color: #FFD700 !important; /* Borda dourada */
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 0 3px #FFD700;
+        }
+
+        /* Cores baseadas na Temperatura (Frequência) - Cores Nítidas */
+        .ball-hot { 
+            background-color: #EF4444; /* Vermelho Vivo */
+            border-color: #B91C1C;
+            color: white;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+        }
+        .ball-medium { 
+            background-color: #EAB308; /* Amarelo Ouro Vivo */
+            border-color: #A16207;
+            color: black;
+            font-weight: 900;
+        }
+        .ball-cold { 
+            background-color: #67E8F9; /* Ciano/Azul Gelo Vivo */
+            border-color: #0E7490;
+            color: #083344; /* Azul Profundo para contraste */
+            font-weight: 900;
+        }
+        
+        .ball-neutral { 
+            background-color: #e5e7eb; /* Cinza claro */
+            color: #9ca3af; /* Texto cinza claro */
+            border-color: #d1d5db;
+            box-shadow: none;
+        }
+
+        /* Scrollbar Personalizada */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Animação de pulso */
+        .pulse-anim {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+        
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+    </style>
+</head>
+<body class="pb-6">
+
+    <!-- Loading Screen -->
+    <div id="loadingOverlay">
+        <i class="fas fa-satellite-dish fa-spin text-4xl text-yellow-400 mb-4"></i>
+        <h2 class="text-xl font-bold">Acedendo à Base de Dados...</h2>
+        <p id="loadingText" class="text-gray-300 mt-2 text-xs font-mono">Iniciando ligação segura</p>
+        <div class="w-48 h-1 bg-gray-700 rounded mt-4 overflow-hidden">
+            <div id="loadingBar" class="h-full bg-yellow-400 w-0 transition-all duration-300"></div>
+        </div>
+    </div>
+
+    <!-- Cabeçalho Compacto -->
+    <header class="header-gold p-3 text-center shadow-md relative z-10">
+        <h1 class="text-2xl md:text-3xl font-black uppercase tracking-wider mb-1 drop-shadow-sm flex justify-center items-center">
+            <i class="fas fa-clover text-black mr-2 text-xl"></i> Borges & Loterias
+        </h1>
+        <div class="flex justify-center items-center mt-2">
+            <div class="inline-block relative">
+                <p id="appSubtitle" class="text-xs md:text-sm font-bold bg-black text-yellow-400 px-4 py-1.5 rounded border-2 border-yellow-600 uppercase tracking-widest shadow-sm">
+                    Analisa as 8 melhores entre o 06 ao 18
+                </p>
+                <div id="statusBadge" class="absolute -top-2 -right-2 bg-gray-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white hidden shadow-sm">...</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto px-2 mt-4 max-w-6xl">
+
+        <!-- Aviso de Erro -->
+        <div id="fallbackAlert" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-4 rounded shadow text-sm" role="alert"></div>
+
+        <!-- SEÇÃO SUPERIOR: Destaque Principal (As 8 Mais Fortes) -->
+        <div class="mb-6">
+            <div class="bg-blue-100 thick-border p-6 rounded-lg text-center relative shadow-lg flex flex-col justify-center">
+                <div class="self-center bg-blue-900 text-white px-6 py-2 rounded-full font-bold border-2 border-white text-base uppercase shadow inline-block mb-4">
+                    <i class="fas fa-balance-scale text-yellow-300 mr-2"></i> Sugestão Equilibrada (06 ao 18)
+                </div>
+                
+                <!-- Nova proporção: 4-2-2 -->
+                <p class="text-xs text-blue-900 mb-3 font-bold uppercase tracking-wide flex justify-center gap-3">
+                    <span class="text-red-600 bg-white px-2 py-1 rounded border border-red-200"><i class="fas fa-fire"></i> 4 Quentes</span>
+                    <span class="text-yellow-600 bg-white px-2 py-1 rounded border border-yellow-200"><i class="fas fa-thermometer-half"></i> 2 Médias</span>
+                    <span class="text-cyan-600 bg-white px-2 py-1 rounded border border-cyan-200"><i class="fas fa-snowflake"></i> 2 Frias</span>
+                </p>
+
+                <div class="flex flex-wrap justify-center gap-4 py-2" id="top8Container">
+                    <span class="text-gray-500 font-bold italic text-sm">Aguardando dados...</span>
+                </div>
+                
+                <button onclick="copiarNumeros()" class="mt-5 w-full md:w-1/3 bg-black text-yellow-400 font-black text-lg py-3 px-6 rounded hover:bg-gray-900 hover:scale-[1.02] transform transition border-2 border-white shadow-lg uppercase flex items-center justify-center mx-auto gap-2">
+                    <i class="fas fa-copy"></i> Copiar Jogo
+                </button>
+            </div>
+        </div>
+
+        <!-- GRID INFERIOR -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Coluna 1: Lista de Resultados (Esquerda) -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                
+                <!-- Quadro de Resultados -->
+                <div class="bg-white thick-border p-0 rounded-lg overflow-hidden flex flex-col h-[450px]">
+                    <div class="bg-black text-white p-2 px-3 text-left border-b-2 border-black relative flex justify-between items-center">
+                        <h2 class="text-sm font-bold uppercase tracking-wide">
+                            <i class="fas fa-history text-yellow-400 mr-1"></i> 10 Últimos Resultados
+                        </h2>
+                        <span class="text-[10px] text-gray-400 uppercase">Deslize para ver mais <i class="fas fa-arrow-down ml-1"></i></span>
+                    </div>
+                    
+                    <!-- Lista Vertical -->
+                    <div id="resultsList" class="overflow-y-auto flex-1 bg-gray-50 p-2 space-y-2 custom-scroll">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+                <!-- Legenda de Cores -->
+                <div class="bg-white border-2 border-gray-300 rounded-lg p-3 shadow-sm">
+                    <h3 class="text-xs font-bold text-gray-600 uppercase mb-2 border-b border-gray-200 pb-1">Temperatura das Dezenas (06-18)</h3>
+                    <div class="flex flex-wrap gap-3 text-xs">
+                        <div class="flex items-center gap-1">
+                            <div class="w-4 h-4 rounded-full ball-hot border border-gray-300 shadow-sm"></div>
+                            <span class="font-bold text-gray-800">Quentes</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-4 h-4 rounded-full ball-medium border border-gray-300 shadow-sm"></div>
+                            <span class="font-bold text-gray-800">Médias</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-4 h-4 rounded-full ball-cold border border-gray-300 shadow-sm"></div>
+                            <span class="font-bold text-gray-800">Frias</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-4 h-4 rounded-full ball-neutral border border-gray-400"></div>
+                            <span class="text-gray-400">Outras</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Estatísticas (Direita) -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+
+                <!-- Estatísticas (Gráfico) -->
+                <div class="bg-blue-100 thick-border p-4 rounded-lg shadow-lg flex-1 h-full">
+                    <h3 class="text-lg font-bold mb-4 border-b-2 border-blue-900 inline-block pb-1 text-blue-900">
+                        <i class="fas fa-chart-bar mr-1"></i> Frequência (Sequencial)
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3" id="statsList">
+                        <div class="col-span-2 text-center text-sm opacity-70 py-4">Carregando estatísticas...</div>
+                    </div>
+
+                    <div class="mt-6 text-center text-xs bg-blue-900/10 p-2 rounded border border-blue-900/30 text-blue-900 font-bold">
+                        Baseado na análise dos últimos 10 concursos oficiais.
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="text-center mt-8 py-4 bg-gray-200 border-t-2 border-black text-gray-600 text-xs font-bold">
+        <p>&copy; 2025 Borges & Loterias - Dados actualizados automaticamente.</p>
+    </footer>
+
+    <script>
+        // --- Configurações ---
+        const TARGET_RANGE = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+        let heatMap = {}; // Armazena a categoria de cada número
+        
+        // --- Estratégia de Múltiplas Fontes (Cascata) ---
+        const SOURCES = [
+            {
+                name: "API Loterias",
+                url: "https://loteriascaixa-api.herokuapp.com/api/lotofacil",
+                type: "single" 
+            },
+            {
+                name: "GitHub Mirror",
+                url: "https://raw.githubusercontent.com/guilhermeasn/loteria.json/master/json/lotofacil.json",
+                type: "full_array"
+            },
+            {
+                name: "Proxy Universal",
+                url: "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://loteriascaixa-api.herokuapp.com/api/lotofacil"),
+                type: "single"
+            }
+        ];
+
+        let ultimos10 = [];
+
+        // --- Inicialização ---
+        window.onload = function() {
+            iniciarProcessoDeCarga();
+        };
+
+        // --- Lógica de Dados ---
+        async function iniciarProcessoDeCarga() {
+            const loader = document.getElementById('loadingOverlay');
+            const alertEl = document.getElementById('fallbackAlert');
+            const badge = document.getElementById('statusBadge');
+            const loadingText = document.getElementById('loadingText');
+            const loadingBar = document.getElementById('loadingBar');
+
+            loader.style.display = 'flex';
+            alertEl.classList.add('hidden');
+            badge.classList.remove('hidden');
+            badge.className = "absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white";
+            badge.innerText = "BUSCANDO";
+
+            let dadosCarregados = null;
+            let fonteUsada = "";
+
+            for (let i = 0; i < SOURCES.length; i++) {
+                const source = SOURCES[i];
+                loadingText.innerText = `Fonte ${i+1}/${SOURCES.length}...`;
+                loadingBar.style.width = `${((i + 1) / SOURCES.length) * 100}%`;
+
+                try {
+                    const response = await fetchWithTimeout(source.url, 5000); 
+                    if (response) {
+                        let data = response;
+                        let arrayNormalizado = [];
+                        if (Array.isArray(data)) arrayNormalizado = data;
+                        else if (typeof data === 'object' && data !== null) arrayNormalizado = [data]; 
+
+                        if (arrayNormalizado.length > 0) {
+                            dadosCarregados = arrayNormalizado;
+                            fonteUsada = source.name;
+                            break; 
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Falha na fonte ${source.name}`);
+                }
+            }
+
+            if (dadosCarregados) {
+                try {
+                    processarDadosBrutos(dadosCarregados, fonteUsada);
+                    loader.style.display = 'none';
+                } catch (e) {
+                    exibirErro("Erro ao processar dados.");
+                    loader.style.display = 'none';
+                }
+            } else {
+                exibirErro("Falha na ligação. Recarregue a página.");
+                loader.style.display = 'none';
+            }
+        }
+
+        function processarDadosBrutos(data, fonteNome) {
+            const badge = document.getElementById('statusBadge');
+            
+            const dadosNormalizados = data.map(item => {
+                let dezenasLimpas = [];
+                let rawDezenas = item.Dezenas || item.dezenas || item.listaDezenas || [];
+                if (Array.isArray(rawDezenas)) dezenasLimpas = rawDezenas.map(n => parseInt(n));
+
+                return {
+                    concurso: parseInt(item.Concurso || item.concurso),
+                    data: item.Data || item.data || item.dataApuracao,
+                    dezenas: dezenasLimpas
+                };
+            }).filter(item => item.concurso && item.dezenas.length === 15);
+
+            dadosNormalizados.sort((a, b) => b.concurso - a.concurso);
+
+            if (dadosNormalizados.length === 0) throw new Error("Dados vazios.");
+            
+            ultimos10 = dadosNormalizados.slice(0, 10);
+
+            badge.className = "absolute -top-2 -right-2 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white";
+            badge.innerText = "LIGADO";
+
+            calcularCalor();
+            renderizarListaResultados();
+            calcularEstatisticas();
+        }
+
+        function calcularCalor() {
+            let contagem = {};
+            TARGET_RANGE.forEach(num => contagem[num] = 0);
+
+            ultimos10.forEach(concurso => {
+                concurso.dezenas.forEach(n => {
+                    if (TARGET_RANGE.includes(n)) contagem[n]++;
+                });
+            });
+
+            let freqArray = [];
+            for (let num in contagem) {
+                freqArray.push({ n: parseInt(num), qtd: contagem[num] });
+            }
+
+            freqArray.sort((a, b) => b.qtd - a.qtd);
+
+            freqArray.forEach((item, index) => {
+                if (index < 5) {
+                    heatMap[item.n] = 'ball-hot';
+                } else if (index < 9) {
+                    heatMap[item.n] = 'ball-medium';
+                } else {
+                    heatMap[item.n] = 'ball-cold';
+                }
+            });
+        }
+
+        function exibirErro(msg) {
+            const alertEl = document.getElementById('fallbackAlert');
+            const badge = document.getElementById('statusBadge');
+            badge.className = "absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white";
+            badge.innerText = "OFF";
+            alertEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg} <button onclick="iniciarProcessoDeCarga()" class="ml-2 underline font-bold">Tentar Novamente</button>`;
+            alertEl.classList.remove('hidden');
+        }
+
+        async function fetchWithTimeout(resource, timeout = 5000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(resource, { signal: controller.signal });
+                clearTimeout(id);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                clearTimeout(id);
+                return null;
+            }
+        }
+
+        function getBallClass(num) {
+            const n = parseInt(num);
+            if (!TARGET_RANGE.includes(n)) return 'ball-neutral';
+            return heatMap[n] || 'ball-neutral';
+        }
+
+        function renderizarListaResultados() {
+            const container = document.getElementById('resultsList');
+            container.innerHTML = '';
+
+            ultimos10.forEach((concurso, index) => {
+                const card = document.createElement('div');
+                const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                card.className = `${bgClass} border border-gray-200 rounded p-2 flex flex-col justify-center items-center hover:shadow-md transition-all`;
+                card.innerHTML = `
+                    <div class="flex justify-between w-full mb-2 px-1 border-b border-gray-100 pb-1">
+                        <span class="font-black text-blue-900 text-xs">
+                            <i class="fas fa-tag text-yellow-500"></i> #${concurso.concurso}
+                        </span>
+                        <span class="text-[10px] font-bold text-gray-400">${concurso.data || ''}</span>
+                    </div>
+                    <div class="flex gap-1 justify-center w-full">
+                        ${concurso.dezenas.map(n => {
+                            const isTarget = TARGET_RANGE.includes(n);
+                            const highlight = isTarget ? 'highlight-range' : '';
+                            const padNum = n < 10 ? '0'+n : n;
+                            return `<div class="loto-ball small ${getBallClass(n)} ${highlight}">${padNum}</div>`;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function calcularEstatisticas() {
+            let contagem = {};
+            TARGET_RANGE.forEach(num => contagem[num] = 0);
+            ultimos10.forEach(concurso => {
+                concurso.dezenas.forEach(n => {
+                    if (TARGET_RANGE.includes(n)) contagem[n]++;
+                });
+            });
+
+            let stats = [];
+            for (let num in contagem) {
+                stats.push({ n: parseInt(num), qtd: contagem[num] });
+            }
+
+            renderizarTop8(stats);
+            let statsSequencial = [...stats].sort((a, b) => a.n - b.n);
+            renderizarGrafico(statsSequencial);
+        }
+
+        function renderizarGrafico(stats) {
+            const container = document.getElementById('statsList');
+            container.innerHTML = '';
+            let rankedStats = [...stats].sort((a, b) => b.qtd - a.qtd);
+            let hotThreshold = rankedStats[4].qtd; 
+            let coldThreshold = rankedStats[8].qtd; 
+
+            stats.forEach(item => {
+                const percent = (item.qtd / 10) * 100;
+                let colorBar = 'bg-yellow-500'; 
+                if (item.qtd >= hotThreshold) colorBar = 'bg-red-500';
+                else if (item.qtd <= coldThreshold) colorBar = 'bg-cyan-400';
+
+                const el = document.createElement('div');
+                el.className = "flex items-center gap-2 mb-1";
+                el.innerHTML = `
+                    <div class="font-bold w-5 text-right text-blue-900 text-xs">${item.n < 10 ? '0'+item.n : item.n}</div>
+                    <div class="flex-1 bg-white rounded h-2.5 overflow-hidden border border-blue-300/50">
+                        <div class="${colorBar} h-full transition-all duration-1000" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="w-8 text-right font-black text-blue-900 text-sm drop-shadow-sm">${item.qtd}x</div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function renderizarTop8(stats) {
+            const container = document.getElementById('top8Container');
+            container.innerHTML = '';
+            
+            // Nova Lógica Balanceada: 4 Quentes + 2 Médias + 2 Frias
+            let sortedByFreq = [...stats].sort((a, b) => b.qtd - a.qtd);
+            
+            // 4 Quentes (Top 4)
+            let hotPart = sortedByFreq.slice(0, 4);
+            
+            // 2 Frias (Bottom 2)
+            let coldPart = sortedByFreq.slice(sortedByFreq.length - 2);
+            
+            // 2 Médias (Pegando o miolo)
+            let remaining = sortedByFreq.slice(4, sortedByFreq.length - 2);
+            let midStart = Math.floor((remaining.length - 2) / 2);
+            let mediumPart = remaining.slice(midStart, midStart + 2);
+            
+            let balancedSet = [...hotPart, ...mediumPart, ...coldPart];
+            balancedSet.sort((a, b) => a.n - b.n);
+
+            balancedSet.forEach(item => {
+                const ball = document.createElement('div');
+                ball.className = `loto-ball large ${getBallClass(item.n)} pulse-anim shadow-lg border-2 border-white font-black`;
+                ball.innerText = item.n < 10 ? '0'+item.n : item.n;
+                container.appendChild(ball);
+            });
+
+            window.numerosGerados = balancedSet.map(x => (x.n < 10 ? '0'+x.n : x.n)).join(' ');
+        }
+
+        function copiarNumeros() {
+            if (!window.numerosGerados) return;
+            const el = document.createElement('textarea');
+            el.value = window.numerosGerados;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const btn = document.querySelector('button[onclick="copiarNumeros()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+            btn.classList.add('bg-green-600', 'text-white');
+            btn.classList.remove('bg-black', 'text-yellow-400');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-green-600', 'text-white');
+                btn.classList.add('bg-black', 'text-yellow-400');
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
