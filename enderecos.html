@@ -119,7 +119,7 @@
             animation: pulse-border 2s infinite;
         }
         @keyframes pulse-border {
-            0 { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
             70% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
         }
@@ -179,9 +179,9 @@
                 </div>
                 
                 <p class="text-xs text-blue-900 mb-3 font-bold uppercase tracking-wide flex justify-center gap-3">
-                    <span class="text-red-600 bg-white px-2 py-1 rounded border border-red-200"><i class="fas fa-fire"></i> Quentes</span>
-                    <span class="text-orange-600 bg-white px-2 py-1 rounded border border-orange-200"><i class="fas fa-thermometer-half"></i> Mornas</span>
-                    <span class="text-blue-600 bg-white px-2 py-1 rounded border border-blue-200"><i class="fas fa-snowflake"></i> Frias</span>
+                    <span class="text-red-600 bg-white px-2 py-1 rounded border border-red-200"><i class="fas fa-fire"></i> Quentes (7-10)</span>
+                    <span class="text-orange-600 bg-white px-2 py-1 rounded border border-orange-200"><i class="fas fa-thermometer-half"></i> Mornas (5-6)</span>
+                    <span class="text-blue-600 bg-white px-2 py-1 rounded border border-blue-200"><i class="fas fa-snowflake"></i> Frias (1-4)</span>
                 </p>
 
                 <div class="flex flex-wrap justify-center gap-4 py-2" id="top8Container">
@@ -221,15 +221,15 @@
                     <div class="flex flex-wrap gap-3 text-xs">
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-hot border border-gray-300 shadow-sm"></div>
-                            <span class="font-bold text-gray-800">Quentes</span>
+                            <span class="font-bold text-gray-800">Quentes (7-10x)</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-medium border border-gray-300 shadow-sm"></div>
-                            <span class="font-bold text-gray-800">Mornas</span>
+                            <span class="font-bold text-gray-800">Mornas (5-6x)</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-cold border border-gray-300 shadow-sm"></div>
-                            <span class="font-bold text-gray-800">Frias</span>
+                            <span class="font-bold text-gray-800">Frias (1-4x)</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-neutral border border-gray-400"></div>
@@ -392,23 +392,20 @@
                 });
             });
 
-            let freqArray = [];
+            // Atualizado conforme solicitação: faixas fixas de frequência
+            // 7-10: Quente (Vermelho)
+            // 5-6: Morna (Laranja)
+            // 1-4: Fria (Azul)
             for (let num in contagem) {
-                freqArray.push({ n: parseInt(num), qtd: contagem[num] });
-            }
-
-            freqArray.sort((a, b) => b.qtd - a.qtd);
-
-            // Cores solicitadas para o heatMap geral
-            freqArray.forEach((item, index) => {
-                if (index < 5) {
-                    heatMap[item.n] = 'ball-hot';
-                } else if (index < 9) {
-                    heatMap[item.n] = 'ball-medium';
+                let qtd = contagem[num];
+                if (qtd >= 7) {
+                    heatMap[num] = 'ball-hot';
+                } else if (qtd >= 5) {
+                    heatMap[num] = 'ball-medium';
                 } else {
-                    heatMap[item.n] = 'ball-cold';
+                    heatMap[num] = 'ball-cold';
                 }
-            });
+            }
         }
 
         function exibirErro(msg) {
@@ -490,15 +487,14 @@
         function renderizarGrafico(stats) {
             const container = document.getElementById('statsList');
             container.innerHTML = '';
-            let rankedStats = [...stats].sort((a, b) => b.qtd - a.qtd);
-            let hotThreshold = rankedStats[4].qtd; 
-            let coldThreshold = rankedStats[8].qtd; 
 
             stats.forEach(item => {
                 const percent = (item.qtd / 10) * 100;
-                let colorBar = 'bg-orange-500'; // Medium (Padrao Mornas)
-                if (item.qtd >= hotThreshold) colorBar = 'bg-red-500';
-                else if (item.qtd <= coldThreshold) colorBar = 'bg-blue-500';
+                
+                // Atualizado conforme solicitação: faixas fixas de frequência para as barras
+                let colorBar = 'bg-blue-500'; // Fria (1-4)
+                if (item.qtd >= 7) colorBar = 'bg-red-500'; // Quente (7-10)
+                else if (item.qtd >= 5) colorBar = 'bg-orange-500'; // Morna (5-6)
 
                 const el = document.createElement('div');
                 el.className = "flex items-center gap-2 mb-1";
