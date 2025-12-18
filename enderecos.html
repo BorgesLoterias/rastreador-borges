@@ -72,7 +72,7 @@
             box-shadow: 0 0 3px #FFD700;
         }
 
-        /* Cores baseadas na Temperatura (Frequência) - Cores Nítidas */
+        /* Cores solicitadas: Quentes (Vermelho), Mornas (Laranja), Frias (Azul) */
         .ball-hot { 
             background-color: #EF4444; /* Vermelho Vivo */
             border-color: #B91C1C;
@@ -80,16 +80,16 @@
             text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
         }
         .ball-medium { 
-            background-color: #EAB308; /* Amarelo Ouro Vivo */
-            border-color: #A16207;
-            color: black;
-            font-weight: 900;
+            background-color: #F97316; /* Laranja Vivo */
+            border-color: #C2410C;
+            color: white;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
         }
         .ball-cold { 
-            background-color: #67E8F9; /* Ciano/Azul Gelo Vivo */
-            border-color: #0E7490;
-            color: #083344; /* Azul Profundo para contraste */
-            font-weight: 900;
+            background-color: #3B82F6; /* Azul Sólido */
+            border-color: #1D4ED8;
+            color: white;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
         }
         
         .ball-neutral { 
@@ -119,7 +119,7 @@
             animation: pulse-border 2s infinite;
         }
         @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            0 { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
             70% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
         }
@@ -171,18 +171,17 @@
         <!-- Aviso de Erro -->
         <div id="fallbackAlert" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-4 rounded shadow text-sm" role="alert"></div>
 
-        <!-- SEÇÃO SUPERIOR: Destaque Principal (As 8 Mais Fortes) -->
+        <!-- SEÇÃO SUPERIOR: Destaque Principal (As 8 Melhores) -->
         <div class="mb-6">
             <div class="bg-blue-100 thick-border p-6 rounded-lg text-center relative shadow-lg flex flex-col justify-center">
                 <div class="self-center bg-blue-900 text-white px-6 py-2 rounded-full font-bold border-2 border-white text-base uppercase shadow inline-block mb-4">
-                    <i class="fas fa-balance-scale text-yellow-300 mr-2"></i> Sugestão Equilibrada (06 ao 18)
+                    <i class="fas fa-star text-yellow-300 mr-2"></i> As 8 Mais Frequentes (06 ao 18)
                 </div>
                 
-                <!-- Nova proporção: 4-2-2 -->
                 <p class="text-xs text-blue-900 mb-3 font-bold uppercase tracking-wide flex justify-center gap-3">
-                    <span class="text-red-600 bg-white px-2 py-1 rounded border border-red-200"><i class="fas fa-fire"></i> 4 Quentes</span>
-                    <span class="text-yellow-600 bg-white px-2 py-1 rounded border border-yellow-200"><i class="fas fa-thermometer-half"></i> 2 Médias</span>
-                    <span class="text-cyan-600 bg-white px-2 py-1 rounded border border-cyan-200"><i class="fas fa-snowflake"></i> 2 Frias</span>
+                    <span class="text-red-600 bg-white px-2 py-1 rounded border border-red-200"><i class="fas fa-fire"></i> Quentes</span>
+                    <span class="text-orange-600 bg-white px-2 py-1 rounded border border-orange-200"><i class="fas fa-thermometer-half"></i> Mornas</span>
+                    <span class="text-blue-600 bg-white px-2 py-1 rounded border border-blue-200"><i class="fas fa-snowflake"></i> Frias</span>
                 </p>
 
                 <div class="flex flex-wrap justify-center gap-4 py-2" id="top8Container">
@@ -226,7 +225,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-medium border border-gray-300 shadow-sm"></div>
-                            <span class="font-bold text-gray-800">Médias</span>
+                            <span class="font-bold text-gray-800">Mornas</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-4 h-4 rounded-full ball-cold border border-gray-300 shadow-sm"></div>
@@ -400,6 +399,7 @@
 
             freqArray.sort((a, b) => b.qtd - a.qtd);
 
+            // Cores solicitadas para o heatMap geral
             freqArray.forEach((item, index) => {
                 if (index < 5) {
                     heatMap[item.n] = 'ball-hot';
@@ -496,9 +496,9 @@
 
             stats.forEach(item => {
                 const percent = (item.qtd / 10) * 100;
-                let colorBar = 'bg-yellow-500'; 
+                let colorBar = 'bg-orange-500'; // Medium (Padrao Mornas)
                 if (item.qtd >= hotThreshold) colorBar = 'bg-red-500';
-                else if (item.qtd <= coldThreshold) colorBar = 'bg-cyan-400';
+                else if (item.qtd <= coldThreshold) colorBar = 'bg-blue-500';
 
                 const el = document.createElement('div');
                 el.className = "flex items-center gap-2 mb-1";
@@ -517,31 +517,21 @@
             const container = document.getElementById('top8Container');
             container.innerHTML = '';
             
-            // Nova Lógica Balanceada: 4 Quentes + 2 Médias + 2 Frias
+            // Lógica: Escolher sempre as 8 melhores (Top 8 por frequência)
             let sortedByFreq = [...stats].sort((a, b) => b.qtd - a.qtd);
+            let top8 = sortedByFreq.slice(0, 8);
             
-            // 4 Quentes (Top 4)
-            let hotPart = sortedByFreq.slice(0, 4);
-            
-            // 2 Frias (Bottom 2)
-            let coldPart = sortedByFreq.slice(sortedByFreq.length - 2);
-            
-            // 2 Médias (Pegando o miolo)
-            let remaining = sortedByFreq.slice(4, sortedByFreq.length - 2);
-            let midStart = Math.floor((remaining.length - 2) / 2);
-            let mediumPart = remaining.slice(midStart, midStart + 2);
-            
-            let balancedSet = [...hotPart, ...mediumPart, ...coldPart];
-            balancedSet.sort((a, b) => a.n - b.n);
+            // Ordena numericamente para exibição final
+            top8.sort((a, b) => a.n - b.n);
 
-            balancedSet.forEach(item => {
+            top8.forEach(item => {
                 const ball = document.createElement('div');
                 ball.className = `loto-ball large ${getBallClass(item.n)} pulse-anim shadow-lg border-2 border-white font-black`;
                 ball.innerText = item.n < 10 ? '0'+item.n : item.n;
                 container.appendChild(ball);
             });
 
-            window.numerosGerados = balancedSet.map(x => (x.n < 10 ? '0'+x.n : x.n)).join(' ');
+            window.numerosGerados = top8.map(x => (x.n < 10 ? '0'+x.n : x.n)).join(' ');
         }
 
         function copiarNumeros() {
